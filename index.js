@@ -133,6 +133,38 @@ function init() {
                         init()
                     })
                 }
+
+                function viewRoles() {
+                    let queryString = `
+    SELECT *
+    FROM department`
+
+                    connection.query(queryString, (err, data) => {
+                        if (err) throw err;
+
+                        console.log('\n')
+                        console.table(data)
+                        console.log('\n')
+
+                        init()
+                    })
+                }
+
+                function viewEmployees() {
+                    let queryString = `
+    SELECT *
+    FROM department`
+
+                    connection.query(queryString, (err, data) => {
+                        if (err) throw err;
+
+                        console.log('\n')
+                        console.table(data)
+                        console.log('\n')
+
+                        init()
+                    })
+                }
             }
         }
     }
