@@ -1,6 +1,9 @@
 const mysql = require('mysql');
 const inquirer = require('inquirer');
 
+const indexdb = require('./db');
+
+
 const connection = mysql.createConnection({
     host: "localhost",
     port: 3306,
@@ -15,154 +18,132 @@ connection.connect(err => {
 })
 
 function init() {
-    inquirer.prompt({
-        name: "choice",
-        type: 'list',
-        message: "What would you like to do?",
-        choices: [
-            "Add Departments",
-            "View Departments",
-            "Add Roles",
-            "View Roles",
-            "Add Employees",
-            "View Employees",
-            "Update Employees",
-            "Done"]
-    }).then((answer) => {
-        if (answer.choice == "Add Departments") {
-            addDepartments();
-        } else if (answer.choice == "View Departments") {
-            viewDepartments();
-        } else if (answer.choice == "Add Roles") {
-            addRoles();
-        } else if (answer.choice == "View Roles") {
-            viewRoles();
-        } else if (answer.choice == "Add Employees") {
-            addEmployees();
-        } else if (answer.choice == "View Employees") {
-            viewEmployees();
-        } else if (answer.choice == "Update Employees") {
-            updateEmployees();
-        } else if (answer.choice == "Done") {
-            console.log("bye")
-            connection.end();
+    inquirer.prompt([
+        {
+            name: "choice",
+            type: 'list',
+            message: "What would you like to do?",
+            choices: [
+                "Add Departments",
+                "View Departments",
+                "Add Roles",
+                "View Roles",
+                "Add Employees",
+                "View Employees",
+                "Done"
+            ]
         }
-    });
+    ]).then(res => {
+        let choice = res.choice;
+        console.log(res)
+        switch (choice) {
+            case "Add Departments":
+                addDepartments();
+                break;
+            case "View Departments":
+                viewDepartments();
+                break;
+            case "Add Roles":
+                addRoles();
+                break;
+            case "View Roles":
+                viewRoles();
+                break;
+            case "Add Employees":
+                addEmployees();
+                break;
+            case "View Employees":
+                viewEmployees();
+                break;
+            default:
+                done();
+        }
+    }
+    )
 };
 
 function addDepartments() {
     inquirer.prompt([
         {
-            type: 'input',
-            message: 'What is the new department name?',
-            name: 'newDepartment'
+            name: "name",
+            message: "The name of the department?"
         }
-    ]).then(answer => {
-        let queryString = `
-INSERT INTO department(name)
-VALUES (?)`
-
-        connection.query(queryString, [answer.newDepartment], err => {
-            if (err) throw err;
-            init()
+    ])
+        .then(res => {
+            let name = res;
+            indexdb.addDepartments(name.choice).then(init())
         })
-    })
-};
+}
 
 function viewDepartments() {
-    let queryString = `
-SELECT *
-FROM department`
-
-    connection.query(queryString, (err, data) => {
-        if (err) throw err;
-
-        console.log('\n')
-        console.table(data)
-        console.log('\n')
-
-        init()
-    })
-};
+    indexdb.viewDepartments()
+        .then(([rows]) => {
+            let departments = rows;
+            console.log("\n");
+            console.table(departments);
+        })
+        .then(() => init());
+}
 
 function addRoles() {
-    inquirer.prompt([
-        {
-            type: 'input',
-            name: 'newRoles',
-            message: 'What is the new roles?'
-        },
-        {
-            type: "input",
-            name: "newSalary",
-            message: "How much is the salary?"
-        },
-        {
-            type: "list",
-            name: "deparment",
-            message: "Which department does this role go to?"
-        }
-    ]).then(answer => {
-        let queryString = `
-INSERT INTO roles(name)
-VALUES (?)`
+    indexdb.addRoles()
+        .then(([rows]) => {
+            let departments = rows;
+            const departmentChoices = departments.map(({ id, name }) => ({
+                name: name,
+                value: id
+            }));
 
-        connection.query(queryString, [answer.newRoles], err => {
-            if (err) throw err;
-            init()
+            inquirer.prompt([
+                {
+                    name: "title",
+                    message: "What is the name of the role?"
+                },
+                {
+                    name: "salary",
+                    message: "What is the salary of the role?"
+                },
+                {
+                    type: "list",
+                    name: "department_id",
+                    message: "Which department does the role belong to?",
+                    choices: departmentChoices
+                }
+            ])
+                .then(role => {
+                    indexdb.createRole(role)
+                        .then(() => console.log(`Added ${role.title} to the database`))
+                        .then(() => init())
+                })
         })
-    })
-};
+}
 
 function viewRoles() {
-    let queryString = `
-SELECT *
-FROM Roles`
-
-    connection.query(queryString, (err, data) => {
-        if (err) throw err;
-
-        console.log('\n')
-        console.table(data)
-        console.log('\n')
-
-        init()
-    })
-};
+    indexdb.viewRoles()
+        .then(([rows]) => {
+            let roles = rows;
+            console.log("\n");
+            console.table(roles);
+        })
+        .then(() => init());
+}
 
 function addEmployees() {
     inquirer.prompt([
         {
-            type: 'input',
-            message: 'What is the new employees first name?',
-            name: 'firstName'
+            name: "first_name",
+            message: "What is the employee's first name?"
         },
         {
-            type: "input",
-            message: "What is the new employees last name?",
-            name: "secondName"
-        },
-        {
-            type: "input",
-            message: "What is the employee's role id?",
-            name: "roleID"
-        },
-        {
-            type: "input",
-            message: "What is the employee's Manager id?",
-            name: "managerId"
+            name: "last_name",
+            message: "What is the employee's last name?"
         }
-    ]).then(answer => {
-        let queryString = `
-INSERT INTO employee(name)
-VALUES (?)`
-
-        connection.query(queryString, [answer.newEmployees], err => {
-            if (err) throw err;
-            init()
+    ])
+        .then(res => {
+            let firstName = res.first_name;
+            let lastName = res.last_name;
         })
-    })
-};
+}
 
 function viewEmployees() {
     let queryString = `
@@ -179,3 +160,8 @@ FROM Employees`
         init()
     })
 };
+
+function done() {
+    console.log("bye!");
+    process.exit();
+}
