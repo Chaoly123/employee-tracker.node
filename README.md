@@ -19,7 +19,7 @@ You will have to install "mysql", workbench is needed with node.js, open termina
 
 The application is called by typing "node index.js" in the terminal, which you will have to write into the terminal command line. Then proceed to add in the team's specs areas. 
 
-Link to the [demo video] .
+Link to the [demo video](https://drive.google.com/file/d/1OX3T8tIcmLl0UgW60hiT98UfS-T5aWhz/view) .
 
 ## Contributing 
 
